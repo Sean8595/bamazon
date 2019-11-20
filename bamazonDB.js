@@ -63,7 +63,10 @@ function readProducts() {
           if (err) throw err;
           for (let j = 0; j < res.length; j++) {
           //this top part will look at the products and check if it exist in the database
-            if (res[j].item_id === answer.buy) {
+            if (res[j].item_id == answer.buy) {
+              var inStock = res[j].stock_quantity;
+              console.log(inStock) 
+              console.log("Item Found!")
               inquirer
                 .prompt([
                   {
@@ -82,10 +85,10 @@ function readProducts() {
         .then(function (response){   
         console.log("Item to buy:" + answer.buy)
         console.log("Amount to buy: " + response.amount);
-        var newBuy = answer.buy
-        var userAmount = response.amount
-        var newAmount = parseInt(userAmount - stock_quantity)
-        
+        var newBuy = answer.buy;
+        var userAmount = response.amount;
+        var newAmount = userAmount - inStock;
+        console.log(newAmount)
         updateProduct(newBuy, newAmount);
         function updateProduct(newBuy, newAmount) {
           console.log("Updating all Products \n");
@@ -102,13 +105,17 @@ function readProducts() {
             function (err, res) {
               if (err) throw err;
               console.log("Products updated!\n");
-              readProducts()
+              start();
             }
           )
         }
                 }
 
       )
+  }
+  else if(answer.buy > res.length){
+    console.log("Please Enter a Valid Number")
+    readProducts();
   }
 }
 },
@@ -121,7 +128,7 @@ function readProducts() {
 //done
 
 //make the app check to see if the product is there
-
+//sorta done
 
 //make the app remove inventory by the amount they put in
 //show how much the user payed for the item
