@@ -20,10 +20,10 @@ function start(){
   ]).then(function(enter){
     if(enter.buy_leave === "Buy")
     {
-      console.log("Buy")
       readProducts()
     }
     else{
+      console.log("BYE BYE")
       connection.end()
     }
   }
@@ -36,13 +36,7 @@ function start(){
 function readProducts() {
   connection.query("SELECT * FROM products", function (err, res) {
     if (err) throw err;
-    for (let j = 0; j < res.length; j++) {
-      // Log all results of the SELECT statement
-      console.log(res[j].item_id);
-      console.log(res[j].product_name);
-      console.log(res[j].department_name);
-      console.log(res[j].stock_quantity);
-    }
+    console.table(res)
     inquirer
       .prompt([
         {
@@ -61,12 +55,15 @@ function readProducts() {
       .then(function (answer) {
         connection.query("SELECT * FROM products", function (err, res) {
           if (err) throw err;
+          if(answer.buy > res.length){
+            console.log("Please enter a valid number")
+            readProducts()
+          }
           for (let j = 0; j < res.length; j++) {
           //this top part will look at the products and check if it exist in the database
             if (res[j].item_id == answer.buy) {
               var inStock = res[j].stock_quantity;
-              console.log(inStock) 
-              console.log("Item Found!")
+              var price = res[j].price
               inquirer
                 .prompt([
                   {
@@ -82,16 +79,19 @@ function readProducts() {
                 }
                 //checks for the user to put in a number and stores it as a variable
                 ])
-        .then(function (response){   
-        console.log("Item to buy:" + answer.buy)
-        console.log("Amount to buy: " + response.amount);
+        .then(function (response){ 
         var newBuy = answer.buy;
         var userAmount = response.amount;
-        var newAmount = userAmount - inStock;
-        console.log(newAmount)
+        if (userAmount > inStock){
+          console.log("Im Sorry there isnt enough in stock")
+          start()
+        }
+        else{
+        var newAmount = inStock - userAmount;
+        var payment = parseFloat(userAmount * price).toFixed(2)
         updateProduct(newBuy, newAmount);
+        }
         function updateProduct(newBuy, newAmount) {
-          console.log("Updating all Products \n");
           var query = connection.query(
             "UPDATE products SET ? WHERE ?",
             [
@@ -104,7 +104,8 @@ function readProducts() {
             ],
             function (err, res) {
               if (err) throw err;
-              console.log("Products updated!\n");
+              console.log("*KA CHING* \n");
+              console.log("You Paid $" + payment)
               start();
             }
           )
@@ -113,10 +114,7 @@ function readProducts() {
 
       )
   }
-  else if(answer.buy > res.length){
-    console.log("Please Enter a Valid Number")
-    readProducts();
-  }
+
 }
 },
     )}
@@ -131,8 +129,16 @@ function readProducts() {
 //sorta done
 
 //make the app remove inventory by the amount they put in
+//done
+
 //show how much the user payed for the item
+//done
+
 //if the user inputs more than what was in stock have it return "not enough instock"
+//done
+
+//make the table look neat
+
 
 
 
