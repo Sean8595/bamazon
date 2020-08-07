@@ -14,13 +14,17 @@ function start(){
     {
       name: "buy_leave",
       type: "list",
-      choices: ["Buy","Quit"],
-      message:"Would you like to buy or quit?"
+      choices: ["Buy","Quit","Manager View"],
+      message:"Would you like to buy, quit, or be the manager?"
     }
   ]).then(function(enter){
     if(enter.buy_leave === "Buy")
     {
       readProducts()
+    }
+    else if(enter.buy_leave === "Manager View")
+    {
+      managerView()
     }
     else{
       console.log("BYE BYE")
@@ -29,7 +33,85 @@ function start(){
   }
   )}
 
+//This is the function for the manager view
+function managerView(){
+//   connection.query("SELECT * FROM products", function (err, res) {
+// if (err) throw err;
+// console.table(res)
+inquirer.prompt([
+  {
+    name: "manage",
+    type: "list",
+    choices: ["View Inv","Check Low Inv","Restock Inv","Add New Product","Exit"],
+    message:"What would you like to do?"
+  }
+]).then(function(enter){
+  if(enter.manage === "View Inv")
+  {
+    connection.query("SELECT * FROM products", function (err, res) {
+      if (err) throw err;
+      console.table(res)})
+      inquirer.prompt([
+        {
+          name: "return",
+          type: "list",
+          choices: ["Return","Exit"]
+        }
+      ]).then(function(enter){
+        if(enter.return === "Return"){
+          managerView();
+        }
+        else{
+          connection.end
+        }
+      })
+  }
+  else if(enter.manage === "Check Low Inv")
+  {
+    lowInvCheck()
+  }
+  else if(enter.manage === "Restock Inv")
+  {
+    restockInv()
+  }
+  else if(enter.manage === "Add New Product")
+  {
+    addNew()
+  }
+  else{
+    console.log("BYE BYE")
+    connection.end()
+  }
+}
+)
+  }
 
+//this function checks low inventory 
+function lowInvCheck(){
+  connection.query("SELECT product_name, stock_quantity FROM products", function (err, res, fields){
+    for (let i = 0; i < res.length; i++) {
+      if(res[i].stock_quantity <= 5){
+        console.log(res[i].product_name + " is running low it has "+ res[i].stock_quantity + " items remaining")
+        
+      }
+    }
+    inquirer.prompt([
+      {
+        name: "return",
+        type: "list",
+        choices: ["Return","Exit"]
+      }
+    ]).then(function(enter){
+      if(enter.return === "Return"){
+        managerView();
+      }
+      else{
+        connection.end
+      }
+    })
+  })
+}
+//this function restocks the product
 //this function starts the inquirer prompts and begins when the app is launched
 
 //function that displays the products and uses inquirer
