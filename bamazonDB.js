@@ -9,109 +9,226 @@ var connection = mysql.createConnection({
 });
 //starts the function to see if the user wants to buy or quit
 start();
-function start(){
+function updateProduct(newBuy, newAmount) {
+  var query = connection.query(
+    "UPDATE products SET ? WHERE ?",
+    [
+      {
+        "stock_quantity": newAmount
+      },
+      {
+        "item_id": newBuy
+      }
+    ],
+    function (err, res) {
+      if (err) throw err;
+      console.log("You have restocked the item")
+      restockInv();
+    }
+  )
+}
+function start() {
   inquirer.prompt([
     {
       name: "buy_leave",
       type: "list",
-      choices: ["Buy","Quit","Manager View"],
-      message:"Would you like to buy, quit, or be the manager?"
+      choices: ["Buy", "Quit", "Manager View"],
+      message: "Would you like to buy, quit, or be the manager?"
     }
-  ]).then(function(enter){
-    if(enter.buy_leave === "Buy")
-    {
+  ]).then(function (enter) {
+    if (enter.buy_leave === "Buy") {
       readProducts()
     }
-    else if(enter.buy_leave === "Manager View")
-    {
+    else if (enter.buy_leave === "Manager View") {
       managerView()
     }
-    else{
+    else {
       console.log("BYE BYE")
       connection.end()
     }
   }
-  )}
+  )
+}
 
 //This is the function for the manager view
-function managerView(){
-//   connection.query("SELECT * FROM products", function (err, res) {
-// if (err) throw err;
-// console.table(res)
-inquirer.prompt([
-  {
-    name: "manage",
-    type: "list",
-    choices: ["View Inv","Check Low Inv","Restock Inv","Add New Product","Exit"],
-    message:"What would you like to do?"
-  }
-]).then(function(enter){
-  if(enter.manage === "View Inv")
-  {
-    connection.query("SELECT * FROM products", function (err, res) {
-      if (err) throw err;
-      console.table(res)})
+function managerView() {
+  //   connection.query("SELECT * FROM products", function (err, res) {
+  // if (err) throw err;
+  // console.table(res)
+  inquirer.prompt([
+    {
+      name: "manage",
+      type: "list",
+      choices: ["View Inv", "Check Low Inv", "Restock Inv", "Add New Product", "Exit"],
+      message: "What would you like to do?"
+    }
+  ]).then(function (enter) {
+    if (enter.manage === "View Inv") {
+      connection.query("SELECT * FROM products", function (err, res) {
+        if (err) throw err;
+        console.table(res)
+      })
       inquirer.prompt([
         {
           name: "return",
           type: "list",
-          choices: ["Return","Exit"]
+          choices: ["Return", "Exit"]
         }
-      ]).then(function(enter){
-        if(enter.return === "Return"){
+      ]).then(function (enter) {
+        if (enter.return === "Return") {
           managerView();
         }
-        else{
+        else {
           connection.end
         }
       })
+    }
+    else if (enter.manage === "Check Low Inv") {
+      lowInvCheck()
+    }
+    else if (enter.manage === "Restock Inv") {
+      restockInv()
+    }
+    else if (enter.manage === "Add New Product") {
+      addNew()
+    }
+    else {
+      console.log("BYE BYE")
+      connection.end()
+    }
   }
-  else if(enter.manage === "Check Low Inv")
-  {
-    lowInvCheck()
-  }
-  else if(enter.manage === "Restock Inv")
-  {
-    restockInv()
-  }
-  else if(enter.manage === "Add New Product")
-  {
-    addNew()
-  }
-  else{
-    console.log("BYE BYE")
-    connection.end()
-  }
+  )
 }
-)
-  }
 
 //this function checks low inventory 
-function lowInvCheck(){
-  connection.query("SELECT product_name, stock_quantity FROM products", function (err, res, fields){
+function lowInvCheck() {
+  connection.query("SELECT product_name, stock_quantity FROM products", function (err, res, fields) {
     for (let i = 0; i < res.length; i++) {
-      if(res[i].stock_quantity <= 5){
-        console.log(res[i].product_name + " is running low it has "+ res[i].stock_quantity + " items remaining")
-        
+      if (res[i].stock_quantity <= 5) {
+        console.log(res[i].product_name + " is running low it has " + res[i].stock_quantity + " items remaining")
+
       }
     }
     inquirer.prompt([
       {
         name: "return",
         type: "list",
-        choices: ["Return","Exit"]
+        choices: ["Return", "Exit"]
       }
-    ]).then(function(enter){
-      if(enter.return === "Return"){
+    ]).then(function (enter) {
+      if (enter.return === "Return") {
         managerView();
       }
-      else{
+      else {
         connection.end
       }
     })
   })
 }
 //this function restocks the product
+
+
+// function restockInv() {
+//   connection.query("SELECT * FROM products", function (err, res) {
+//     inquirer.prompt([
+//       {
+//         name: "restock",
+//         type: "input",
+//         message: "What would you like to restock?",
+//         validate: function (value) {
+//           if (isNaN(value) === false) {
+//             return true;
+//           }
+//           return false;
+//         }
+//       }
+
+//     ]).then(function(answer){
+
+//     }
+//     )
+//   })
+// }
+
+function restockInv() {
+  connection.query("SELECT * FROM products", function (err, res) {
+    if (err) throw err;
+    console.table(res)
+    inquirer
+      .prompt([
+        {
+          name: "buy",
+          type: "input",
+          message: "Which Item would you to restock? ",
+          validate: function (value) {
+            if (isNaN(value) === false) {
+              return true;
+            }
+            return false;
+          }
+        }
+      ])
+      //end of first prompt
+      .then(function (answer) {
+        connection.query("SELECT * FROM products", function (err, res) {
+          if (err) throw err;
+          if (answer.buy > res.length) {
+            console.log("Please enter a valid number")
+            restockInv()
+          }
+          for (let j = 0; j < res.length; j++) {
+            //this top part will look at the products and check if it exist in the database
+            if (res[j].item_id == answer.buy) {
+              var inStock = res[j].stock_quantity;
+              inquirer
+                .prompt([
+                  {
+                    name: "amount",
+                    type: "input",
+                    message: "How many would you like to add?",
+                    validate: function (value) {
+                      if (isNaN(value) === false) {
+                        return true;
+                      }
+                      return false;
+                    }
+                  }
+                  //checks for the user to put in a number and stores it as a variable
+                ])
+                .then(function (response) {
+                  var newBuy = answer.buy;
+                  var userAmount = response.amount;
+
+                  // if (userAmount > inStock) {
+                  //   console.log("Im Sorry there isnt enough in stock")
+                  //   start()
+                  // }
+                  // else {
+
+   
+                
+                  var newAmount = Number(inStock) + Number(userAmount);
+                  console.log(newAmount)
+                  // var payment = parseFloat(userAmount * price).toFixed(2)
+                  updateProduct(newBuy, newAmount);
+                  // }
+
+                  //update product function used to decreese and increase 
+                }
+
+                )
+            }
+
+          }
+        },
+        )
+      }
+      )
+  }
+  )
+}
+
+
 //this function starts the inquirer prompts and begins when the app is launched
 
 //function that displays the products and uses inquirer
@@ -137,71 +254,76 @@ function readProducts() {
       .then(function (answer) {
         connection.query("SELECT * FROM products", function (err, res) {
           if (err) throw err;
-          if(answer.buy > res.length){
+          if (answer.buy > res.length) {
             console.log("Please enter a valid number")
             readProducts()
           }
           for (let j = 0; j < res.length; j++) {
-          //this top part will look at the products and check if it exist in the database
+            //this top part will look at the products and check if it exist in the database
             if (res[j].item_id == answer.buy) {
               var inStock = res[j].stock_quantity;
               var price = res[j].price
               inquirer
                 .prompt([
                   {
-                  name: "amount",
-                  type: "input",
-                  message: "How many would you like to order?",
-                  validate: function (value) {
-                    if (isNaN(value) === false) {
-                      return true;
+                    name: "amount",
+                    type: "input",
+                    message: "How many would you like to order?",
+                    validate: function (value) {
+                      if (isNaN(value) === false) {
+                        return true;
+                      }
+                      return false;
                     }
-                    return false;
+                  }
+                  //checks for the user to put in a number and stores it as a variable
+                ])
+                .then(function (response) {
+                  var newBuy = answer.buy;
+                  var userAmount = response.amount;
+                  if (userAmount > inStock) {
+                    console.log("Im Sorry there isnt enough in stock")
+                    start()
+                  }
+                  else {
+                    var newAmount = inStock - userAmount;
+                    var payment = parseFloat(userAmount * price).toFixed(2)
+                    updateProduct(newBuy, newAmount);
+                  }
+
+                  //update product function used to decreese and increase 
+                  function updateProduct(newBuy, newAmount) {
+                    var query = connection.query(
+                      "UPDATE products SET ? WHERE ?",
+                      [
+                        {
+                          "stock_quantity": newAmount
+                        },
+                        {
+                          "item_id": newBuy
+                        }
+                      ],
+                      function (err, res) {
+                        if (err) throw err;
+                        console.log("*KA CHING* \n");
+                        console.log("You Paid $" + payment)
+                        start();
+                      }
+                    )
                   }
                 }
-                //checks for the user to put in a number and stores it as a variable
-                ])
-        .then(function (response){ 
-        var newBuy = answer.buy;
-        var userAmount = response.amount;
-        if (userAmount > inStock){
-          console.log("Im Sorry there isnt enough in stock")
-          start()
-        }
-        else{
-        var newAmount = inStock - userAmount;
-        var payment = parseFloat(userAmount * price).toFixed(2)
-        updateProduct(newBuy, newAmount);
-        }
-        function updateProduct(newBuy, newAmount) {
-          var query = connection.query(
-            "UPDATE products SET ? WHERE ?",
-            [
-              {
-                "stock_quantity": newAmount
-              },
-              {
-                "item_id": newBuy
-              }
-            ],
-            function (err, res) {
-              if (err) throw err;
-              console.log("*KA CHING* \n");
-              console.log("You Paid $" + payment)
-              start();
-            }
-          )
-        }
-                }
 
+                )
+            }
+
+          }
+        },
+        )
+      }
       )
   }
-
+  )
 }
-},
-    )}
-  )}
-)}
 
 //TO DO:
 //Make a way to get out of the app with a quit function
