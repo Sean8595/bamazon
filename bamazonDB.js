@@ -205,8 +205,8 @@ function restockInv() {
                   // }
                   // else {
 
-   
-                
+
+
                   var newAmount = Number(inStock) + Number(userAmount);
                   console.log(newAmount)
                   // var payment = parseFloat(userAmount * price).toFixed(2)
@@ -226,6 +226,44 @@ function restockInv() {
       )
   }
   )
+}
+//Function for adding new products to the the list provided
+function addNew() {
+  inquirer.prompt([
+    {
+      name: "adding",
+      type: "input",
+      message: "What is the name of the item you want to add?"
+    },
+    {
+      name: "department",
+      type: "input",
+      message: "what department is it in?"
+    },
+    {
+      name: "priceInput",
+      type: "input",
+      message: "How much does it cost?"
+    },
+    {
+      name: "quant",
+      type: "input",
+      message: "How many are you entering?"
+    }
+  ]).then(function (answer) {
+    connection.query("INSERT INTO products SET ?", {
+      product_name: answer.adding,
+      department_name: answer.department,
+      price: answer.priceInput,
+      stock_quantity: answer.quant
+    },
+      function (err, res) {
+        if (err) throw err;
+        console.log("Your product was added succesfully!");
+
+        start();
+      })
+  })
 }
 
 
